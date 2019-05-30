@@ -1,6 +1,7 @@
 from __future__ import absolute_import
 import re
 import numpy as np
+import h5py
 import warnings
 from collections import OrderedDict
 from copy import copy, deepcopy
@@ -1200,6 +1201,14 @@ class ObjectMapper(with_metaclass(ExtenderMeta, object)):
                 val = const_args[argname]
             else:
                 continue
+
+            # repack scalar entries with SIMPLE dataspaces
+            # so that the constructor sees always the same data
+            if isinstance(val, h5py.Dataset)                                       \
+               and val.shape == (1,)                                               \
+               and val.id.get_space().get_simple_extent_type() == h5py.h5s.SIMPLE:
+                val = val[0]
+
             kwargs[argname] = val
         try:
             obj = cls.__new__(cls, container_source=builder.source, parent=parent,
